@@ -1,0 +1,85 @@
+1. 
+- 회원가입 가능
+- 중복 닉네임 검사 가능
+- 로그인 가능
+- 로그인한 유저의 코인 불러오기 가능
+- 아이템 구매 가능
+- 코인이 부족하면 구매 불가
+- 인벤토리 아이템 개수 표시 가능
+- 아이템 사용 시 개수 감소
+- Firebase 콘솔에서 데이터 변경 확인 가능
+- UI에 결과 메시지 표시
+- 경매장 시스템 구매 및 판매
+2. 아이템: Axe,Sword,Bow
+Axe:근접 공격용 무기 한번 휘두르는 파워가 강하지만 공격속도가 느리다
+Sword: 근접 공격용 무기 한번 휘두르는 파워가 약하지만 공격속도가 빠른편이다.
+Bow: 원거리 공격용 무기 파워가 강하지만 공격속도는 평균이다.
+3. 도끼:150,검:250,활:300 
+Root
+├── UserInfo
+│   └── {userKey}               ← Firebase Push()로 자동 생성된 고유 키
+│       ├── NickName: "User01"  ← 유저 닉네임
+│       ├── Coin: 1000          ← 보유 코인
+│       ├── Score: 0            ← 점수
+│       ├── Inventory: "{\"Axe\":2, \"Sword\":1, \"Bow\":3}"  ← JSON 문자열
+│       └── UnitList: "{\"Unit1\":true, \"Unit2\":false ...}" ← JSON 문자열
+│
+└── AuctionList
+    └── {auctionKey}            ← Firebase Push()로 자동 생성된 고유 키
+        ├── AuctionKey          ← 경매 고유 키
+        ├── SellerKey           ← 판매자 userKey
+        ├── SellerNickName      ← 판매자 닉네임
+        ├── ItemName            ← 아이템 이름 (Axe/Sword/Bow)
+        ├── Count: 1            ← 판매 수량
+        ├── Price: 200          ← 판매 가격
+        ├── IsSold: false       ← 판매 완료 여부
+        └── ListedAt            ← 등록 시간 (서버 타임스탬프)
+5. 키값설명UserKey/-, OvDAPCkPq8pzIu5PnWz/Firebase에서 자동 생성된 유저 고유 키. 씬 이동 후에도 유저를 식별하는 데 사용
+UserNickName/User01/유저 닉네임. 경매장 판매 등록 시 SellerNickName에 활용
+6. Inventory JSON 처리 방식 설명
+인벤토리는 Dictionary<string, int> 형태로 관리하며 Firebase에는 JSON 문자열로 저장함
+저장 방식
+csharp// Dictionary → JSON 문자열로 변환 후 Firebase에 저장
+Dictionary<string, int> inventory = new Dictionary<string, int>();
+inventory["Axe"] = 2;
+inventory["Sword"] = 1;
+inventory["Bow"] = 3;
+
+string inventoryJson = JsonConvert.SerializeObject(inventory);
+// 결과: "{\"Axe\":2,\"Sword\":1,\"Bow\":3}"
+
+reference.Child("UserInfo").Child(userKey)
+    .Child("Inventory").SetValueAsync(inventoryJson);
+불러오기 방식
+csharp// Firebase에서 JSON 문자열 불러온 후 Dictionary로 변환
+string inventoryJson = snapshot.Child("Inventory").Value.ToString();
+inventory = JsonConvert.DeserializeObject<Dictionary<string, int>>(inventoryJson);
+
+// 아이템 개수 조회
+int axeCount = inventory.ContainsKey("Axe") ? inventory["Axe"] : 0;
+사용/구매 시 처리
+csharp// 아이템 추가
+inventory["Axe"]++;
+
+// 아이템 차감
+inventory["Axe"]--;
+
+// 변경 후 다시 JSON으로 변환하여 Firebase에 저장
+string updatedJson = JsonConvert.SerializeObject(inventory);
+
+7. 실행 중 발생한 문제와 해결 방법
+문제 1. NullReferenceException 발생
+원인: Inspector에서 UI 슬롯(Text, InputField 등)이 연결되지 않은 상태에서 스크립트가 실행됨
+해결: Inspector에서 해당 슬롯에 UI 오브젝트를 드래그하여 연결
+
+문제 2. 경매 목록이 로드되지 않음
+원인: OrderByChild("IsSold").EqualTo(false) 쿼리가 Firebase에서 bool 타입을 제대로 인식하지 못함
+해결: 전체 데이터를 불러온 후 foreach 안에서 직접 IsSold 값을 체크하는 방식으로 변경
+
+문제 3. AuctionItemPrefab이 ScrollView 밖에 생성됨
+원인: Instantiate(prefab, parent) 방식으로 생성 시 월드 좌표 기준으로 배치되어 UI 영역 밖에 생성됨
+해결: SetParent(ListingContainer, false)를 사용하여 로컬 좌표 기준으로 배치
+
+문제 4. 유저 변경 후 경매 목록이 갱신되지 않음
+원인: 유저 데이터 로드 버튼이 ShopManager만 갱신하고 AuctionManager와 AuctionListManager는 갱신하지 않음
+해결: 각 Manager에 ReloadAll() 함수를 추가하고 유저 데이터 로드 버튼 OnClick에 모두 연결
