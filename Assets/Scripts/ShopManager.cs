@@ -93,11 +93,11 @@ public class ShopManager : MonoBehaviour
     }
     public void OnClickBuySword()
     {
-        BuyItem("Sword", 100);
+        BuyItem("Sword", 250);
     }
     public void OnClickBuyBow()
     {
-        BuyItem("Bow", 50);
+        BuyItem("Bow", 300);
     }
 
     void BuyItem(string itemName, int price)
