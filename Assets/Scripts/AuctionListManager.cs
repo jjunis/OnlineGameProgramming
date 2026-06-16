@@ -4,6 +4,8 @@ using UnityEngine.UI;
 using PimDeWitte.UnityMainThreadDispatcher;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using Firebase;
+using System;
 
 public class AuctionListManager : MonoBehaviour
 {
@@ -24,9 +26,12 @@ public class AuctionListManager : MonoBehaviour
 
     void Start()
     {
-        database = FirebaseDatabase.GetInstance(
-            "https://onlinegameprogramming-7f17f-default-rtdb.asia-southeast1.firebasedatabase.app/"
-        );
+        FirebaseApp app = FirebaseApp.Create(new AppOptions
+        {
+            DatabaseUrl = new Uri("https://onlinegameprogramming-7f17f-default-rtdb.asia-southeast1.firebasedatabase.app/")
+        });
+        database = FirebaseDatabase.GetInstance(app);
+
         reference = database.RootReference;
         dispatcher = UnityMainThreadDispatcher.Instance();
 
@@ -37,6 +42,10 @@ public class AuctionListManager : MonoBehaviour
         userKey = PlayerPrefs.GetString("UserKey");
         nickName = PlayerPrefs.GetString("UserNickName");
 
+        // 이 줄 추가
+        Debug.Log("userKey: " + userKey);
+        Debug.Log("nickName: " + nickName);
+
         if (string.IsNullOrEmpty(userKey))
         {
             MessageText.text = "로그인 정보가 없습니다.";
@@ -45,6 +54,9 @@ public class AuctionListManager : MonoBehaviour
 
         reference.Child("UserInfo").Child(userKey).GetValueAsync().ContinueWith(task =>
         {
+            Debug.Log("task.IsFaulted: " + task.IsFaulted);
+            Debug.Log("task.IsCompleted: " + task.IsCompleted);
+
             if (task.IsFaulted)
             {
                 dispatcher.Enqueue(() => MessageText.text = "유저 정보 로드 실패");
@@ -52,12 +64,16 @@ public class AuctionListManager : MonoBehaviour
             }
 
             DataSnapshot snapshot = task.Result;
+
+            Debug.Log("snapshot.Value: " + snapshot.Value);
+
             currentCoin = int.Parse(snapshot.Child("Coin").Value.ToString());
             string invJson = snapshot.Child("Inventory").Value.ToString();
             inventory = JsonConvert.DeserializeObject<Dictionary<string, int>>(invJson);
 
             dispatcher.Enqueue(() =>
             {
+                Debug.Log("LoadMyData 완료, LoadAuctionList 호출");
                 CoinText.text = "Coin : " + currentCoin;
                 LoadAuctionList();
             });
@@ -65,8 +81,14 @@ public class AuctionListManager : MonoBehaviour
     }
     public void LoadAuctionList()
     {
+        Debug.Log("LoadAuctionList 시작");
+
         reference.Child("AuctionList").GetValueAsync().ContinueWith(task =>
         {
+
+            Debug.Log("AuctionList task.IsFaulted: " + task.IsFaulted);
+            Debug.Log("AuctionList task.IsCompleted: " + task.IsCompleted);
+
             if (task.IsFaulted)
             {
                 dispatcher.Enqueue(() => MessageText.text = "경매 목록 로드 실패");
@@ -74,6 +96,9 @@ public class AuctionListManager : MonoBehaviour
             }
 
             DataSnapshot snapshot = task.Result;
+
+            Debug.Log("AuctionList HasChildren: " + snapshot.HasChildren);
+            Debug.Log("AuctionList ChildrenCount: " + snapshot.ChildrenCount);
 
             dispatcher.Enqueue(() =>
             {
@@ -88,7 +113,13 @@ public class AuctionListManager : MonoBehaviour
 
                 foreach (DataSnapshot child in snapshot.Children)
                 {
+                    Debug.Log("child Key: " + child.Key);
+                    Debug.Log("IsSold value: " + child.Child("IsSold").Value);
+
                     bool isSold = bool.Parse(child.Child("IsSold").Value.ToString());
+
+                    Debug.Log("isSold: " + isSold);
+
                     if (isSold) continue;
 
                     AuctionData data = new AuctionData();
@@ -99,6 +130,8 @@ public class AuctionListManager : MonoBehaviour
                     data.Count = int.Parse(child.Child("Count").Value.ToString());
                     data.Price = int.Parse(child.Child("Price").Value.ToString());
                     data.IsSold = isSold;
+
+                    Debug.Log("CreateAuctionItemUI 호출: " + data.ItemName);
 
                     bool isMine = data.SellerKey == userKey;
                     CreateAuctionItemUI(data, isMine);
@@ -111,7 +144,8 @@ public class AuctionListManager : MonoBehaviour
 
     void CreateAuctionItemUI(AuctionData data, bool isMine)
     {
-        GameObject obj = Instantiate(AuctionItemPrefab, ListingContainer);
+        GameObject obj = Instantiate(AuctionItemPrefab);
+        obj.transform.SetParent(ListingContainer, false);
         AuctionItemUI ui = obj.GetComponent<AuctionItemUI>();
         ui.Setup(data, isMine, () => OnClickBuy(data));
     }
@@ -197,6 +231,13 @@ public class AuctionListManager : MonoBehaviour
                     });
                 });
             });
+    }
+
+    public void ReloadAll()
+    {
+        userKey = PlayerPrefs.GetString("UserKey");
+        nickName = PlayerPrefs.GetString("UserNickName");
+        LoadMyData();
     }
 
     public void OnClickRefresh()

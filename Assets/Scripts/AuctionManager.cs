@@ -34,7 +34,6 @@ public class AuctionManager : MonoBehaviour
         );
         reference = database.RootReference;
         dispatcher = UnityMainThreadDispatcher.Instance();
-
         LoadMyData();
     }
 
@@ -147,6 +146,13 @@ public class AuctionManager : MonoBehaviour
                 });
             }
         });
+    }
+
+    public void ReloadAll()
+    {
+        userKey = PlayerPrefs.GetString("UserKey");
+        nickName = PlayerPrefs.GetString("UserNickName");
+        LoadMyData();
     }
 
     public void OnSellAxeButton() { SellItem("Axe"); }
