@@ -17,6 +17,10 @@ public class ShopManager : MonoBehaviour
     [SerializeField] Text CoinText;
     [SerializeField] Text MessagerText;
 
+    [SerializeField] Text AxeCountText;
+    [SerializeField] Text SwordCountText;
+    [SerializeField] Text BowCountText;
+
     string userKey;
 
     int currentCoin;
@@ -77,22 +81,23 @@ public class ShopManager : MonoBehaviour
     void RefreshUI()
     {
         CoinText.text = " Coin: " + currentCoin;
+
+        AxeCountText.text = "Axe : " + (inventory.ContainsKey("Axe") ? inventory["Axe"] : 0);
+        SwordCountText.text = "Sword : " + (inventory.ContainsKey("Sword") ? inventory["Sword"] : 0);
+        BowCountText.text = "Bow : " + (inventory.ContainsKey("Bow") ? inventory["Bow"] : 0);
     }
 
     public void OnClickBuyAxe()
     {
         BuyItem("Axe", 150);
-        RefreshUI();
     }
     public void OnClickBuySword()
     {
         BuyItem("Sword", 100);
-        RefreshUI();
     }
     public void OnClickBuyBow()
     {
         BuyItem("Bow", 50);
-        RefreshUI();
     }
 
     void BuyItem(string itemName, int price)
