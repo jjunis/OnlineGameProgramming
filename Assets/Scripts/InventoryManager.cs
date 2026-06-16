@@ -13,9 +13,9 @@ public class InventoryManager : MonoBehaviour
     UnityMainThreadDispatcher dispatcher;
 
     [Header("UI")]
-    [SerializeField] Text PotionCountText;
-    [SerializeField] Text BombCountText;
-    [SerializeField] Text TicketCountText;
+    [SerializeField] Text AxeCountText;
+    [SerializeField] Text SwordCountText;
+    [SerializeField] Text BowCountText;
     [SerializeField] Text MessageText;
 
     string userKey;
@@ -96,9 +96,9 @@ public class InventoryManager : MonoBehaviour
 
     void RefreshUI()
     {
-        PotionCountText.text = "Axe : " + GetItemCount("Axe");
-        BombCountText.text = "Sword : " + GetItemCount("Sword");
-        TicketCountText.text = "Bow : " + GetItemCount("Bow");
+        AxeCountText.text = "Axe : " + GetItemCount("Axe");
+        SwordCountText.text = "Sword : " + GetItemCount("Sword");
+        BowCountText.text = "Bow : " + GetItemCount("Bow");
     }
 
     void UserItem(string itemName)
@@ -120,15 +120,15 @@ public class InventoryManager : MonoBehaviour
         SaveInventory(itemName);
     }
 
-    public void OnClickUsePotion()
+    public void OnClickSellAxe()
     {
         UserItem("Axe");
     }
-    public void OnClickUseBomb()
+    public void OnClickSellSword()
     {
         UserItem("Sword");
     }
-    public void OnClickUseTicket()
+    public void OnClickSellBow()
     {
         UserItem("Bow");
     }
@@ -153,7 +153,7 @@ public class InventoryManager : MonoBehaviour
                 dispatcher.Enqueue(() =>
                 {
                     RefreshUI();
-                    MessageText.text = userItemname + "사용 완료";
+                    MessageText.text = userItemname + "판매 완료";
                 });
             }
         });

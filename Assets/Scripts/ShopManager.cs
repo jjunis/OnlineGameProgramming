@@ -79,17 +79,17 @@ public class ShopManager : MonoBehaviour
         CoinText.text = " Coin: " + currentCoin;
     }
 
-    public void OnClickBuyPotion()
+    public void OnClickBuyAxe()
     {
         BuyItem("Axe", 150);
         RefreshUI();
     }
-    public void OnClickBuyBomb()
+    public void OnClickBuySword()
     {
         BuyItem("Sword", 100);
         RefreshUI();
     }
-    public void OnClickBuyTicket()
+    public void OnClickBuyBow()
     {
         BuyItem("Bow", 50);
         RefreshUI();
