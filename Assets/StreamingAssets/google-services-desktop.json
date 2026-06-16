@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "143478209285",
+    "project_id": "onlinegameprogramming-7f17f",
+    "storage_bucket": "onlinegameprogramming-7f17f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:143478209285:android:e6e8605222f06ddb10556c",
+        "android_client_info": {
+          "package_name": "com.company.onlinegameprogramming"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTr50GsULM2RrXka-EiMUJu58NSOhwaHQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
