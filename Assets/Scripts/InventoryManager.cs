@@ -25,26 +25,17 @@ public class InventoryManager : MonoBehaviour
 
     void Start()
     {
-
         database = FirebaseDatabase.GetInstance(
             "https://onlinegameprogramming-7f17f-default-rtdb.asia-southeast1.firebasedatabase.app/"
         );
+
         reference = database.RootReference;
         dispatcher = UnityMainThreadDispatcher.Instance();
 
-        UserNickNameText.text = GameManager.Instance.UserNickName + "님의 인벤토리";
+        UserNickNameText.text =
+            GameManager.Instance.UserNickName + "님의 인벤토리";
 
-        if (GameManager.Instance != null && GameManager.Instance.Inventory.Count > 0)
-        {
-            userKey = GameManager.Instance.UserKey;
-            inventory = GameManager.Instance.Inventory;
-            RefreshUI();
-            MessageText.text = "인벤토리 불러오기 완료";
-        }
-        else
-        {
-            LoadInventory();
-        }
+        LoadInventory();
     }
 
     void LoadInventory()

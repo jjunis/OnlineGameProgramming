@@ -1177,7 +1177,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 627880209}
         m_TargetAssemblyTypeName: AuctionManager, Assembly-CSharp
         m_MethodName: OnSellSwordButton
         m_Mode: 1
@@ -2083,7 +2083,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 840049903}
         m_TargetAssemblyTypeName: AuctionListManager, Assembly-CSharp
         m_MethodName: OnClickRefresh
         m_Mode: 1
@@ -2313,7 +2313,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 627880209}
         m_TargetAssemblyTypeName: AuctionManager, Assembly-CSharp
         m_MethodName: OnSellAxeButton
         m_Mode: 1
@@ -2525,7 +2525,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 2033166660}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.99997085
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -2902,7 +2902,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 627880209}
         m_TargetAssemblyTypeName: AuctionManager, Assembly-CSharp
         m_MethodName: OnSellBowButton
         m_Mode: 1
