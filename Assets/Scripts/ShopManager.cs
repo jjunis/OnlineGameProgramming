@@ -17,10 +17,6 @@ public class ShopManager : MonoBehaviour
     [SerializeField] Text CoinText;
     [SerializeField] Text MessagerText;
 
-    [SerializeField] Text AxeCountText;
-    [SerializeField] Text SwordCountText;
-    [SerializeField] Text BowCountText;
-
     string userKey;
 
     int currentCoin;
@@ -41,7 +37,9 @@ public class ShopManager : MonoBehaviour
 
     public void LoadUserData()
     {
-        userKey = PlayerPrefs.GetString("UserKey");
+        userKey = GameManager.Instance != null
+            ? GameManager.Instance.UserKey
+            : PlayerPrefs.GetString("UserKey");
 
         if (string.IsNullOrEmpty(userKey))
         {
@@ -49,15 +47,30 @@ public class ShopManager : MonoBehaviour
             return;
         }
 
+        if (GameManager.Instance != null && GameManager.Instance.Inventory.Count > 0)
+        {
+            inventory = GameManager.Instance.Inventory;
+            reference.Child("UserInfo").Child(userKey).Child("Coin")
+                .GetValueAsync().ContinueWith(task =>
+                {
+                    if (task.IsCompleted)
+                    {
+                        currentCoin = int.Parse(task.Result.Value.ToString());
+                        dispatcher.Enqueue(() =>
+                        {
+                            RefreshUI();
+                            MessagerText.text = "유저 정보 불러오기 완료";
+                        });
+                    }
+                });
+            return;
+        }
+
         reference.Child("UserInfo").Child(userKey).GetValueAsync().ContinueWith(task =>
         {
             if (task.IsFaulted)
             {
-                dispatcher.Enqueue(() =>
-                {
-                    MessagerText.text = "유저 정보 불러오기 실패";
-                });
-
+                dispatcher.Enqueue(() => MessagerText.text = "유저 정보 불러오기 실패");
                 return;
             }
 
@@ -66,8 +79,9 @@ public class ShopManager : MonoBehaviour
                 DataSnapshot snapshot = task.Result;
                 currentCoin = int.Parse(snapshot.Child("Coin").Value.ToString());
                 string inventoryJson = snapshot.Child("Inventory").Value.ToString();
-
                 inventory = JsonConvert.DeserializeObject<Dictionary<string, int>>(inventoryJson);
+
+                GameManager.Instance?.SetInventory(inventory);
 
                 dispatcher.Enqueue(() =>
                 {
@@ -81,10 +95,6 @@ public class ShopManager : MonoBehaviour
     void RefreshUI()
     {
         CoinText.text = " Coin: " + currentCoin;
-
-        AxeCountText.text = "Axe : " + (inventory.ContainsKey("Axe") ? inventory["Axe"] : 0);
-        SwordCountText.text = "Sword : " + (inventory.ContainsKey("Sword") ? inventory["Sword"] : 0);
-        BowCountText.text = "Bow : " + (inventory.ContainsKey("Bow") ? inventory["Bow"] : 0);
     }
 
     public void OnClickBuyAxe()
@@ -111,13 +121,11 @@ public class ShopManager : MonoBehaviour
         currentCoin -= price;
 
         if (inventory.ContainsKey(itemName))
-        {
             inventory[itemName]++;
-        }
         else
-        {
             inventory.Add(itemName, 1);
-        }
+
+        GameManager.Instance?.SetInventory(inventory);
 
         SaveUserData(itemName);
     }
@@ -127,7 +135,6 @@ public class ShopManager : MonoBehaviour
         string inventoryJson = JsonConvert.SerializeObject(inventory);
 
         Dictionary<string, object> updateData = new Dictionary<string, object>();
-
         updateData["Coin"] = currentCoin;
         updateData["Inventory"] = inventoryJson;
 
@@ -139,7 +146,6 @@ public class ShopManager : MonoBehaviour
                 {
                     MessagerText.text = "구매 저장 실패";
                 });
-
                 return;
             }
 
@@ -147,6 +153,9 @@ public class ShopManager : MonoBehaviour
             {
                 dispatcher.Enqueue(() =>
                 {
+                    GameManager.Instance?.SetInventory(inventory);
+
+                    RefreshUI();
                     MessagerText.text = boughtItemName + " 구매 완료";
                 });
             }

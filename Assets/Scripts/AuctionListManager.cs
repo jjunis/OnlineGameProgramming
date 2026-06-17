@@ -26,11 +26,9 @@ public class AuctionListManager : MonoBehaviour
 
     void Start()
     {
-        FirebaseApp app = FirebaseApp.Create(new AppOptions
-        {
-            DatabaseUrl = new Uri("https://onlinegameprogramming-7f17f-default-rtdb.asia-southeast1.firebasedatabase.app/")
-        });
-        database = FirebaseDatabase.GetInstance(app);
+        database = FirebaseDatabase.GetInstance(
+            "https://onlinegameprogramming-7f17f-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        );
 
         reference = database.RootReference;
         dispatcher = UnityMainThreadDispatcher.Instance();

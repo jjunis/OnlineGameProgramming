@@ -2,6 +2,7 @@ using UnityEngine;
 using Firebase.Database;
 using UnityEngine.UI;
 using PimDeWitte.UnityMainThreadDispatcher;
+using UnityEngine.SceneManagement;
 
 public class UserLogin : MonoBehaviour
 {
@@ -38,7 +39,8 @@ public class UserLogin : MonoBehaviour
             {
                 dispatcher.Enqueue(() =>
                 {
-                    checkText.text = "Firebase 읽기 오류";
+                    if (checkText != null)
+                        checkText.text = "Firebase 읽기 오류";
                 });
             }
 
@@ -63,9 +65,13 @@ public class UserLogin : MonoBehaviour
                     PlayerPrefs.SetString("UserNickName", nickName);
                     PlayerPrefs.Save();
 
-                    checkText.text = "로그인 성공";
+                    GameManager.Instance.SetUserData(userKey, nickName);
+
+                    if (checkText != null)
+                        checkText.text = "로그인 성공";
 
                     //Scene 이동처리
+                    SceneManager.LoadScene("InventoryScene");
                 });
 
                 break;

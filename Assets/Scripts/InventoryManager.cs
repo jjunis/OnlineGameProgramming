@@ -4,7 +4,6 @@ using UnityEngine.UI;
 using PimDeWitte.UnityMainThreadDispatcher;
 using Newtonsoft.Json;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 public class InventoryManager : MonoBehaviour
 {
@@ -17,29 +16,42 @@ public class InventoryManager : MonoBehaviour
     [SerializeField] Text SwordCountText;
     [SerializeField] Text BowCountText;
     [SerializeField] Text MessageText;
+    [SerializeField] Text UserNickNameText;
 
     string userKey;
-
     Dictionary<string, int> inventory = new Dictionary<string, int>();
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    bool isProcessing = false;
+
     void Start()
     {
+
+        database = FirebaseDatabase.GetInstance(
+            "https://onlinegameprogramming-7f17f-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        );
+        reference = database.RootReference;
+        dispatcher = UnityMainThreadDispatcher.Instance();
+
+        UserNickNameText.text = GameManager.Instance.UserNickName + "님의 인벤토리";
+
+        if (GameManager.Instance != null && GameManager.Instance.Inventory.Count > 0)
         {
-            database = FirebaseDatabase.GetInstance(
-                "https://onlinegameprogramming-7f17f-default-rtdb.asia-southeast1.firebasedatabase.app/"
-            );
-
-            reference = database.RootReference;
-            dispatcher = UnityMainThreadDispatcher.Instance();
-
+            userKey = GameManager.Instance.UserKey;
+            inventory = GameManager.Instance.Inventory;
+            RefreshUI();
+            MessageText.text = "인벤토리 불러오기 완료";
+        }
+        else
+        {
             LoadInventory();
         }
     }
 
     void LoadInventory()
     {
-        userKey = PlayerPrefs.GetString("UserKey");
+        userKey = GameManager.Instance != null
+            ? GameManager.Instance.UserKey
+            : PlayerPrefs.GetString("UserKey");
 
         if (string.IsNullOrEmpty(userKey))
         {
@@ -47,51 +59,42 @@ public class InventoryManager : MonoBehaviour
             return;
         }
 
-        reference.Child("UserInfo").Child(userKey).Child("Inventory").GetValueAsync().ContinueWith(task =>
-        {
-            if (task.IsFaulted)
+        reference.Child("UserInfo").Child(userKey).Child("Inventory")
+            .GetValueAsync().ContinueWith(task =>
             {
-                dispatcher.Enqueue(() =>
+                if (task.IsFaulted)
                 {
-                    MessageText.text = "인벤토리 불러오기 실패";
-                });
-                return;
-            }
-
-            if (task.IsCompleted)
-            {
-                DataSnapshot snapshot = task.Result;
-
-                if (snapshot.Value == null)
-                {
-                    dispatcher.Enqueue(() =>
-                    {
-                        MessageText.text = "인벤토리 데이터가 없습니다.";
-                    });
+                    dispatcher.Enqueue(() => MessageText.text = "인벤토리 불러오기 실패");
                     return;
                 }
 
-                string inventoryJson = snapshot.Value.ToString();
-
-                inventory = JsonConvert.DeserializeObject<Dictionary<string, int>>(inventoryJson);
-
-                dispatcher.Enqueue(() =>
+                if (task.IsCompleted)
                 {
-                    RefreshUI();
-                    MessageText.text = "인벤토리 불러오기 완료";
-                });
-            }
-        });
+                    DataSnapshot snapshot = task.Result;
+
+                    if (snapshot.Value == null)
+                    {
+                        dispatcher.Enqueue(() => MessageText.text = "인벤토리 데이터가 없습니다.");
+                        return;
+                    }
+
+                    string inventoryJson = snapshot.Value.ToString();
+                    inventory = JsonConvert.DeserializeObject<Dictionary<string, int>>(inventoryJson);
+
+                    GameManager.Instance?.SetInventory(inventory);
+
+                    dispatcher.Enqueue(() =>
+                    {
+                        RefreshUI();
+                        MessageText.text = "인벤토리 불러오기 완료";
+                    });
+                }
+            });
     }
 
     int GetItemCount(string itemName)
     {
-        if (inventory.ContainsKey(itemName))
-        {
-            return inventory[itemName];
-        }
-
-        return 0;
+        return inventory.ContainsKey(itemName) ? inventory[itemName] : 0;
     }
 
     void RefreshUI()
@@ -103,59 +106,59 @@ public class InventoryManager : MonoBehaviour
 
     void UserItem(string itemName)
     {
+        if (isProcessing)
+        {
+            MessageText.text = "처리 중입니다...";
+            return;
+        }
+
         if (!inventory.ContainsKey(itemName))
         {
-            MessageText.text = itemName + "아이템이 없습니다.";
+            MessageText.text = itemName + " 아이템이 없습니다.";
             return;
         }
 
         if (inventory[itemName] <= 0)
         {
-            MessageText.text = itemName + "개수가 부족합니다. ";
+            MessageText.text = itemName + " 개수가 부족합니다.";
             return;
         }
 
+        isProcessing = true;
+
         inventory[itemName]--;
+        GameManager.Instance?.UseItem(itemName);
 
         SaveInventory(itemName);
     }
 
-    public void OnClickEquipAxe()
-    {
-        UserItem("Axe");
-    }
-    public void OnClickEquipSword()
-    {
-        UserItem("Sword");
-    }
-    public void OnClickEquipBow()
-    {
-        UserItem("Bow");
-    }
+    public void OnClickEquipAxe() => UserItem("Axe");
+    public void OnClickEquipSword() => UserItem("Sword");
+    public void OnClickEquipBow() => UserItem("Bow");
 
     void SaveInventory(string userItemname)
     {
         string inventoryJson = JsonConvert.SerializeObject(inventory);
 
-        reference.Child("UserInfo").Child(userKey).Child("Inventory").SetValueAsync(inventoryJson).ContinueWith(task =>
-        {
-            if (task.IsFaulted)
+        reference.Child("UserInfo").Child(userKey).Child("Inventory")
+            .SetValueAsync(inventoryJson).ContinueWith(task =>
             {
-                dispatcher.Enqueue(() =>
+                if (task.IsFaulted)
                 {
-                    MessageText.text = "인벤토리 저장 실패";
-                });
-                return;
-            }
+                    dispatcher.Enqueue(() =>
+                    {
+                        MessageText.text = "인벤토리 저장 실패";
+                        isProcessing = false;
+                    });
+                    return;
+                }
 
-            if (task.IsCompleted)
-            {
                 dispatcher.Enqueue(() =>
                 {
                     RefreshUI();
-                    MessageText.text = userItemname + "장착 완료";
+                    MessageText.text = userItemname + " 장착 완료";
+                    isProcessing = false;
                 });
-            }
-        });
+            });
     }
 }

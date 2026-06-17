@@ -4,5 +4,18 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/LoginScene.unity
+    guid: a83ba1ea5bc9c1c4497c35e581301eff
+  - enabled: 1
+    path: Assets/Scenes/InventoryScene.unity
+    guid: 583afaa64eb78b14683fca9c59ef7eee
+  - enabled: 1
+    path: Assets/Scenes/ShopScene.unity
+    guid: 49e5ff135ccc85347969351cbc95c8e5
+  - enabled: 1
+    path: Assets/Scenes/AuctionScene.unity
+    guid: a70dbb3d727798b41b3986c618eea037
   m_configObjects: {}
+  m_UseUCBPForAssetBundles: 0
