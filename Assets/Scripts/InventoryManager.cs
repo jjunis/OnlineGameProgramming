@@ -127,7 +127,6 @@ public class InventoryManager : MonoBehaviour
         isProcessing = true;
 
         inventory[itemName]--;
-        GameManager.Instance?.UseItem(itemName);
 
         SaveInventory(itemName);
     }
