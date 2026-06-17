@@ -120,15 +120,15 @@ public class InventoryManager : MonoBehaviour
         SaveInventory(itemName);
     }
 
-    public void OnClickSellAxe()
+    public void OnClickEquipAxe()
     {
         UserItem("Axe");
     }
-    public void OnClickSellSword()
+    public void OnClickEquipSword()
     {
         UserItem("Sword");
     }
-    public void OnClickSellBow()
+    public void OnClickEquipBow()
     {
         UserItem("Bow");
     }
@@ -153,7 +153,7 @@ public class InventoryManager : MonoBehaviour
                 dispatcher.Enqueue(() =>
                 {
                     RefreshUI();
-                    MessageText.text = userItemname + "판매 완료";
+                    MessageText.text = userItemname + "장착 완료";
                 });
             }
         });
