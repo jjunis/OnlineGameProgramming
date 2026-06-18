@@ -1,20 +1,97 @@
-1. 
-- 회원가입 가능
-- 중복 닉네임 검사 가능
-- 로그인 가능
-- 로그인한 유저의 코인 불러오기 가능
-- 아이템 구매 가능
-- 코인이 부족하면 구매 불가
-- 인벤토리 아이템 개수 표시 가능
-- 아이템 사용 시 개수 감소
-- Firebase 콘솔에서 데이터 변경 확인 가능
-- UI에 결과 메시지 표시
-- 경매장 시스템 구매 및 판매
+1. 구현 기능
+- 회원가입(UserRegister.cs)
+닉네임 중복을 확인한 후 Firebase에 새 유저를 생성하는 기능
+// 닉네임 중복 확인
+reference.Child("UserInfo").OrderByChild("NickName").EqualTo(nickName)...
+// 신규 유저 생성
+DatabaseReference newUserRef = reference.Child("UserInfo").Push();
+newUserRef.SetRawJsonValueAsync(json);
+- 로그인 (UserLogin.cs)
+닉네임으로 Firebase에서 유저를 검색하고 로그인 후 인벤토리 씬으로 이동
+// 유저 검색
+reference.Child("UserInfo").OrderByChild("NickName").EqualTo(nickName)...
+// 로그인 성공 시 GameManager에 저장 후 씬 이동
+GameManager.Instance.SetUserData(userKey, nickName);
+SceneManager.LoadScene("InventoryScene");
+- 유저 데이터 모델 (UserData.cs)
+신규 유저 생성 시 기본 데이터 구조를 정의
+// 기본값 설정
+NickName = nickName;
+Coin = 1000;
+Score = 0;
+inventory["Axe"] = 0;
+inventory["Sword"] = 0;
+inventory["Bow"] = 0;
+- 씬 이동 (SceneMove.cs)
+버튼 클릭으로 각 씬으로 이동하고 로그아웃 처리
+// 씬 이동
+SceneManager.LoadScene("ShopScene");
+SceneManager.LoadScene("InventoryScene");
+SceneManager.LoadScene("AuctionScene");
+// 로그아웃 시 GameManager 초기화
+GameManager.Instance.SetUserData("", "");
+GameManager.Instance.SetInventory(new Dictionary<string, int>());
+SceneManager.LoadScene("LoginScene");
+- 게임 매니저 (GameManager.cs)
+씬이 전환되어도 유저 데이터와 인벤토리를 유지하는 싱글톤 매니저
+// 씬 전환 후에도 파괴되지 않음
+DontDestroyOnLoad(gameObject);
+// 유저 데이터 저장
+public void SetUserData(string key, string nickName) {...}
+// 인벤토리 데이터 저장
+public void SetInventory(Dictionary<string, int> inventory) {...}
+- 인벤토리 (InventoryManager.cs)
+Firebase에서 인벤토리를 불러오고 아이템 사용 후 저장
+// 인벤토리 불러오기
+reference.Child("UserInfo").Child(userKey).Child("Inventory").GetValueAsync()...
+// 아이템 사용 후 저장
+inventory[itemName]--;
+reference.Child("UserInfo").Child(userKey).Child("Inventory").SetValueAsync(inventoryJson);
+- 상점 (ShopManager.cs)
+코인으로 아이템을 구매하고 Firebase에 코인과 인벤토리를 동시 저장
+// 구매 처리
+currentCoin -= price;
+inventory[itemName]++;
+// 코인과 인벤토리 동시 저장
+updateData["Coin"] = currentCoin;
+updateData["Inventory"] = inventoryJson;
+reference.Child("UserInfo").Child(userKey).UpdateChildrenAsync(updateData);
+- 경매장 판매 등록 (AuctionManager.cs)
+아이템을 경매장에 등록하고 인벤토리에서 차감
+// 인벤토리 차감 + 경매장 등록 동시 처리
+inventory[itemName]--;
+updateData["UserInfo/" + userKey + "/Inventory"] = inventoryJson;
+updateData["AuctionList/" + auctionKey + "/ItemName"] = data.ItemName;
+updateData["AuctionList/" + auctionKey + "/Price"] = data.Price;
+updateData["AuctionList/" + auctionKey + "/IsSold"] = false;
+reference.UpdateChildrenAsync(updateData);
+- 경매장 구매 (AuctionListManager.cs)
+경매 목록을 불러오고 구매 시 구매자/판매자 데이터를 동시 업데이트
+// 경매 목록 로드
+reference.Child("AuctionList").GetValueAsync()...
+// 구매 시 4가지 동시 업데이트
+updateData["AuctionList/" + auctionKey + "/IsSold"] = true;  // 판매 완료
+updateData["UserInfo/" + userKey + "/Coin"] = currentCoin;   // 구매자 코인 차감
+updateData["UserInfo/" + userKey + "/Inventory"] = buyerInvJson; // 구매자 인벤토리 증가
+updateData["UserInfo/" + sellerKey + "/Coin"] = sellerCoin;  // 판매자 코인 증가
+reference.UpdateChildrenAsync(updateData);
+- 경매 데이터 모델 (AuctionData.cs)
+경매장 아이템 데이터 구조 정의
+public string AuctionKey;    // 경매 고유 키
+public string SellerKey;     // 판매자 키
+public string SellerNickName;// 판매자 닉네임
+public string ItemName;      // 아이템 이름
+public int Count;            // 수량
+public int Price;            // 가격
+public bool IsSold;          // 판매 완료 여부
+
 2. 아이템: Axe,Sword,Bow
 Axe:근접 공격용 무기 한번 휘두르는 파워가 강하지만 공격속도가 느리다
 Sword: 근접 공격용 무기 한번 휘두르는 파워가 약하지만 공격속도가 빠른편이다.
 Bow: 원거리 공격용 무기 파워가 강하지만 공격속도는 평균이다.
+
 3. 도끼:150,검:250,활:300 
+
 Root
 ├── UserInfo
 │   └── {userKey}               ← Firebase Push()로 자동 생성된 고유 키
@@ -36,38 +113,35 @@ Root
         └── ListedAt            ← 등록 시간 (서버 타임스탬프)
 5. 키값설명UserKey/-, OvDAPCkPq8pzIu5PnWz/Firebase에서 자동 생성된 유저 고유 키. 씬 이동 후에도 유저를 식별하는 데 사용
 UserNickName/User01/유저 닉네임. 경매장 판매 등록 시 SellerNickName에 활용
+
 6. Inventory JSON 처리 방식 설명
 인벤토리는 Dictionary<string, int> 형태로 관리하며 Firebase에는 JSON 문자열로 저장함
 저장 방식
-csharp// Dictionary → JSON 문자열로 변환 후 Firebase에 저장
+// Dictionary → JSON 문자열로 변환 후 Firebase에 저장
 Dictionary<string, int> inventory = new Dictionary<string, int>();
 inventory["Axe"] = 2;
 inventory["Sword"] = 1;
 inventory["Bow"] = 3;
-
 string inventoryJson = JsonConvert.SerializeObject(inventory);
 // 결과: "{\"Axe\":2,\"Sword\":1,\"Bow\":3}"
-
 reference.Child("UserInfo").Child(userKey)
     .Child("Inventory").SetValueAsync(inventoryJson);
 불러오기 방식
-csharp// Firebase에서 JSON 문자열 불러온 후 Dictionary로 변환
+// Firebase에서 JSON 문자열 불러온 후 Dictionary로 변환
 string inventoryJson = snapshot.Child("Inventory").Value.ToString();
 inventory = JsonConvert.DeserializeObject<Dictionary<string, int>>(inventoryJson);
-
 // 아이템 개수 조회
 int axeCount = inventory.ContainsKey("Axe") ? inventory["Axe"] : 0;
 사용/구매 시 처리
-csharp// 아이템 추가
+// 아이템 추가
 inventory["Axe"]++;
-
 // 아이템 차감
 inventory["Axe"]--;
-
 // 변경 후 다시 JSON으로 변환하여 Firebase에 저장
 string updatedJson = JsonConvert.SerializeObject(inventory);
 
 7. 실행 중 발생한 문제와 해결 방법
+
 문제 1. NullReferenceException 발생
 원인: Inspector에서 UI 슬롯(Text, InputField 등)이 연결되지 않은 상태에서 스크립트가 실행됨
 해결: Inspector에서 해당 슬롯에 UI 오브젝트를 드래그하여 연결
